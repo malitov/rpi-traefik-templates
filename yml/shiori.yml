@@ -1,0 +1,40 @@
+### Shiori - Simple bookmark manager built with Go
+
+version: "3.8"
+
+networks:
+  traefik_network:
+    external:
+      name: traefik_network
+
+  default:
+    driver: bridge
+
+services:
+  shiori:
+    container_name: shiori
+    image: malitov/rpi-shiori
+    restart: unless-stopped
+    networks:
+      - traefik_network
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ./data/shiori:/srv/shiori
+    environment:
+      - PUID
+      - PGID
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_network"
+      ## HTTP Routers
+      - "traefik.http.routers.shiori-rtr.rule=Host(`shiori.$DOMAINNAME`)"
+      - "traefik.http.routers.shiori-rtr.entrypoints=https"
+      - "traefik.http.routers.shiori-rtr.tls=true"
+      - "traefik.http.routers.shiori-rtr.tls.certresolver=dns-cloudflare"
+      ## Middlewares
+      # - "traefik.http.routers.shiori-rtr.middlewares=secure-headers@file"
+      # - "traefik.http.routers.shiori-rtr.middlewares=rate-limit@file,secure-chain@file"
+      ## HTTP Services
+      - "traefik.http.routers.shiori-rtr.service=shiori-svc"
+      - "traefik.http.services.shiori-svc.loadbalancer.server.port=8080"
